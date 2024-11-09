@@ -1,13 +1,12 @@
 if (document.getElementById("battleSimulatorPopup") == null) {
 	/*TODO
-		Cuadros de tipos efectivos aumenta el ancho más de la mitad si hay mucho texto, ¿cómo limitarlo con flexbox?
 		Botón ventaja de tipo actualmente no se tiene en cuenta, que se tenga y que este active el update al tocarlo.
 	*/
 	// Todo el HTML y el CSS.
 	var tiposInterval = null;
 	document.getElementById("wrap").insertAdjacentHTML("afterend",`<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script><div id="battleSimulatorPopup" style="position:absolute; width:400px; font-weight:bold; font-size:12px; z-index: 999999; background-image:url('https://i.imgur.com/ph8xoAJ.png'); background-repeat: repeat;" class="colorsYsiel">
 		<div style="display: flex; justify-content: flex-end;"><button id="btClose" class="colorsYsiel">X</button></div>
-		<div style="display: flex; justify-content: center;"><div class="textShadow">Simulador de batallas y comparador de tipos.</div></div>
+		<div style="display: flex; justify-content: center;"><div class="textShadow">Comparador de tipos y simulador de batallas.</div></div>
 		
 		<div style="margin: 5px; display: flex; flex-wrap: wrap">
 			`+getPokemonLayout(true, false)[0]+`
@@ -110,7 +109,7 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		.Tierra {background-color:#DCBB52; color:#000000;}
 		.Veneno {background-color:#AA5E9C; color:#000000;}
 		.Volador {background-color:#6B9BED; color:#000000;}
-		.typeText {padding: 0 2px 0 2px; margin: 0 2px 0 2px;}
+		.typeText {padding: 0 2px 0 2px; margin: 1px 2px 1px 2px; text-align: center;}
 	</style>
 	`);
 
@@ -230,15 +229,22 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		var _txtEffective = "";
 		for (var _i = 0; _i < _arrTypeNames.length; ++_i) {
 			if (getVentaja(_typeSelfPrimary, _arrTypeNames[_i]) > 0 || getVentaja(_typeSelfSecondary, _arrTypeNames[_i]) > 0)
-				_txtEffective += (_txtEffective != "" ? "," : "") + _arrTypeStyles[_i];
+				_txtEffective += _arrTypeStyles[_i];
 		}
-		$("#dvEffective"+_sSelf).html("<div style='color:#00FF00;'>★</div> " + _txtEffective);
+		$("#dvEffective"+_sSelf).html("<div class='typeText' style='color:#00FF00;'>★</div> " + _txtEffective);
 		
 		var _txtWeak = "";
 		for (var _i = 0; _i < _arrTypeNames.length; ++_i)
 			if (getVentaja(_arrTypeNames[_i], _typeSelfPrimary) + getVentaja(_arrTypeNames[_i], _typeSelfSecondary) > 0)
-				_txtWeak += (_txtWeak != "" ? "," : "") + _arrTypeStyles[_i];
-		$("#dvWeak"+_sSelf).html("<div style='color:#FF0000;'>☓</div> " + _txtWeak);
+				_txtWeak += _arrTypeStyles[_i];
+		$("#dvWeak"+_sSelf).html("<div class='typeText' style='color:#FF0000;'>☓</div> " + _txtWeak);
+		
+		// Texto de ventaja de tipo.
+		$("#txtTypeBonus"+_sSelf).html(
+			getVentaja(_typeSelfPrimary, _typeOtherPrimary)+getVentaja(_typeSelfPrimary, _typeOtherSecondary) > 0 ||
+			getVentaja(_typeSelfSecondary, _typeOtherPrimary)+getVentaja(_typeSelfSecondary, _typeOtherSecondary) > 0 ?
+			"<div style='color:#00FF00;'>¡Con ventaja de tipo!</div>" : "<div style='color:#888888;'>Sin ventaja de tipo...</div>"
+		);
 	}
 	
 	function getArrayOfTypes(_showStyles) {
@@ -328,8 +334,8 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		var _strWho = _isYours ? "de tu Poké" : "del Poké rival";
 		var _idYours = _isYours ? "You" : "Rival";
 		
-		// Construye la barra de vida y el número.
-		var _space = `<div style="flex-basis: 70%;"></div>`;
+		// Construye la barra de vida y el número. Indica si hay ventaja de tipo.
+		var _space = `<div style="flex-basis: 70%;" id="txtTypeBonus`+_idYours+`"></div>`;
 		var _drops = `<div style="flex-basis: 30%;">PV: <input class="inPV" id="inPV`+_idYours+`" title="Los puntos de vida `+_strWho+`" value="40" style="margin-left: 3px; margin-right: 3px; width: 26px;"/></div>`;
 		var _bar = String(_isNumberLeft ? _space+_drops : _drops+_space);
 		var _buttons =
@@ -345,8 +351,8 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 				_buttons+
 			`</div>`,
 			`<div class="colorsYsiel" style="flex-basis: 48%; display: flex; flex-wrap: wrap; padding: 5px;">
-				<div id="dvEffective`+_idYours+`" style="flex-basis: 100%; display: flex;" title="Estos son los tipos contra los cuales tienen ventaja ambos tipos `+_strWho+`"></div>
-				<div id="dvWeak`+_idYours+`" style="flex-basis: 100%; display: flex;" title="Estos son los tipos efectivos contra la combinación de tipos `+_strWho+`"></div>
+				<div id="dvEffective`+_idYours+`" style="flex-basis: 50%; display: flex; flex-direction: column;" title="Estos son los tipos contra los cuales tienen ventaja ambos tipos `+_strWho+`"></div>
+				<div id="dvWeak`+_idYours+`" style="flex-basis: 50%; display: flex; flex-direction: column;" title="Estos son los tipos efectivos contra la combinación de tipos `+_strWho+`"></div>
 			</div>`
 		];
 	}
