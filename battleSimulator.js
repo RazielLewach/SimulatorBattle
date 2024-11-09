@@ -1,4 +1,8 @@
 if (document.getElementById("battleSimulatorPopup") == null) {
+	/*TODO
+		Cuadros de tipos efectivos aumenta el ancho más de la mitad si hay mucho texto, ¿cómo limitarlo con flexbox?
+		Botón ventaja de tipo actualmente no se tiene en cuenta, que se tenga y que este active el update al tocarlo.
+	*/
 	// Todo el HTML y el CSS.
 	var tiposInterval = null;
 	document.getElementById("wrap").insertAdjacentHTML("afterend",`<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script><div id="battleSimulatorPopup" style="position:absolute; width:400px; font-weight:bold; font-size:12px; z-index: 999999; background-image:url('https://i.imgur.com/ph8xoAJ.png'); background-repeat: repeat;" class="colorsYsiel">
@@ -6,9 +10,15 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		<div style="display: flex; justify-content: center;"><div class="textShadow">Simulador de batallas y comparador de tipos.</div></div>
 		
 		<div style="margin: 5px; display: flex; flex-wrap: wrap">
-			`+getPokemonLayout(true, false)+`
-			<div class="divVS textShadow" title="¡VERSUS!">VS</div>
-			`+getPokemonLayout(false, true)+`
+			`+getPokemonLayout(true, false)[0]+`
+			<div class="divVS textShadow" title="¡VERSUS!" style="flex-basis: 4%; display: flex; flex-wrap: wrap;">VS</div>
+			`+getPokemonLayout(false, true)[0]+`
+		</div>
+		<div></div>
+		<div style="margin: 5px; display: flex; flex-wrap: wrap">
+			`+getPokemonLayout(true, false)[1]+`
+			<div style="flex-basis: 4%; display: flex; flex-wrap: wrap;"></div>
+			`+getPokemonLayout(false, true)[1]+`
 		</div>
 		
 		<div class="divBattleTitle"><div class="textShadow">Dados de combate</div></div>
@@ -81,25 +91,26 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		}
 		
 		/*Los colores de los tipos.*/
-		.Null {background-color:#000000; color:#000000;}
-		.Steel {background-color:#AFACBB; color:#000000;}
-		.Water {background-color:#319CFE; color:#000000;}
-		.Bug {background-color:#A7B535; color:#000000;}
+		.Nulo {background-color:#000000; color:#000000;}
+		.Acero {background-color:#AFACBB; color:#000000;}
+		.Agua {background-color:#319CFE; color:#000000;}
+		.Bicho {background-color:#A7B535; color:#000000;}
 		.Dragon {background-color:#7B68E0; color:#000000;}
-		.Electric {background-color:#FDE07A; color:#000000;}
-		.Ghost {background-color:#6F6A99; color:#FFFFFF;}
-		.Fire {background-color:#FF4422; color:#000000;}
-		.Fairy {background-color:#F3AFEF; color:#000000;}
-		.Ice {background-color:#82DDF9; color:#000000;}
-		.Fighting {background-color:#B9594E; color:#FFFFFF;}
+		.Electrico {background-color:#FDE07A; color:#000000;}
+		.Fantasma {background-color:#6F6A99; color:#FFFFFF;}
+		.Fuego {background-color:#FF4422; color:#000000;}
+		.Hada {background-color:#F3AFEF; color:#000000;}
+		.Hielo {background-color:#82DDF9; color:#000000;}
+		.Lucha {background-color:#B9594E; color:#FFFFFF;}
 		.Normal {background-color:#BAB9AC; color:#000000;}
-		.Grass {background-color:#7BCC56; color:#000000;}
-		.Psychic {background-color:#E16591; color:#000000;}
-		.Rock {background-color:#BCAA65; color:#000000;}
-		.Dark {background-color:#695749; color:#FFFFFF;}
-		.Ground {background-color:#DCBB52; color:#000000;}
-		.Poison {background-color:#AA5E9C; color:#000000;}
-		.Flying {background-color:#6B9BED; color:#000000;}
+		.Planta {background-color:#7BCC56; color:#000000;}
+		.Psiquico {background-color:#E16591; color:#000000;}
+		.Roca {background-color:#BCAA65; color:#000000;}
+		.Siniestro {background-color:#695749; color:#FFFFFF;}
+		.Tierra {background-color:#DCBB52; color:#000000;}
+		.Veneno {background-color:#AA5E9C; color:#000000;}
+		.Volador {background-color:#6B9BED; color:#000000;}
+		.typeText {padding: 0 2px 0 2px; margin: 0 2px 0 2px;}
 	</style>
 	`);
 
@@ -159,52 +170,107 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	// Añade un dropdown de tipos.
 	function getDropdownTypes() {
 		return `
-			<option class="Null" value="Null"></option>
-			<option class="Steel" value="Steel">Acero</option>
-			<option class="Water" value="Water">Agua</option>
-			<option class="Bug" value="Bug">Bicho</option>
+			<option class="Nulo" value="Nulo"></option>
+			<option class="Acero" value="Acero">Acero</option>
+			<option class="Agua" value="Agua">Agua</option>
+			<option class="Bicho" value="Bicho">Bicho</option>
 			<option class="Dragon" value="Dragon">Dragón</option>
-			<option class="Electric" value="Electric">Eléctrico</option>
-			<option class="Ghost" value="Ghost">Fantasma</option>
-			<option class="Fire" value="Fire">Fuego</option>
-			<option class="Fairy" value="Fairy">Hada</option>
-			<option class="Ice" value="Ice">Hielo</option>
-			<option class="Fighting" value="Fighting">Lucha</option>
+			<option class="Electrico" value="Electrico">Eléctrico</option>
+			<option class="Fantasma" value="Fantasma">Fantasma</option>
+			<option class="Fuego" value="Fuego">Fuego</option>
+			<option class="Hada" value="Hada">Hada</option>
+			<option class="Hielo" value="Hielo">Hielo</option>
+			<option class="Lucha" value="Lucha">Lucha</option>
 			<option class="Normal" value="Normal">Normal</option>
-			<option class="Grass" value="Grass">Planta</option>
-			<option class="Psychic" value="Psychic">Psíquico</option>
-			<option class="Rock" value="Rock">Roca</option>
-			<option class="Dark" value="Dark">Siniestro</option>
-			<option class="Ground" value="Ground">Tierra</option>
-			<option class="Poison" value="Poison">Veneno</option>
-			<option class="Flying" value="Flying">Volador</option>
+			<option class="Planta" value="Planta">Planta</option>
+			<option class="Psiquico" value="Psiquico">Psíquico</option>
+			<option class="Roca" value="Roca">Roca</option>
+			<option class="Siniestro" value="Siniestro">Siniestro</option>
+			<option class="Tierra" value="Tierra">Tierra</option>
+			<option class="Veneno" value="Veneno">Veneno</option>
+			<option class="Volador" value="Volador">Volador</option>
 		`;
 	}
 	
 	// Actualiza los PV finales.
 	function updateAllInfo() {
-		updateDamageCase(true);
-		updateDamageCase(false);
+		updateParticipant(true);
+		updateParticipant(false);
 	}
 	
 	// Actualiza los PV finales de un caso concreto.
-	function updateDamageCase(_isYou) {
+	function updateParticipant(_isYou) {
+		// Variables.
 		var _iSelf = _isYou ? 0 : 3;
 		var _iOther = _isYou ? 3 : 0;
-		var _sufix = _isYou ? "You" : "Rival";
-		var _pv = parseInt($("#inPV"+_sufix).val());
-		$('#tbDamages').children().each(function () { // Iteramos cada turno...
+		var _sSelf = _isYou ? "You" : "Rival";
+		var _sOther = _isYou ? "Rival" : "You";
+		var _typeSelfPrimary = $('#ddType'+_sSelf+'Primary').val();
+		var _typeSelfSecondary = $('#ddType'+_sSelf+'Secondary').val();
+		var _typeOtherPrimary = $('#ddType'+_sOther+'Primary').val();
+		var _typeOtherSecondary = $('#ddType'+_sOther+'Secondary').val();
+		
+		// La vida.
+		var _pv = parseInt($("#inPV"+_sSelf).val());
+		$("#tbDamages").children().each(function () { // Iteramos cada turno...
 			var _dmg = parseInt($($($(this).children()[_iOther]).children()[0])[0].dataset.value);
+			var _ventaja = Math.max(
+				getVentaja(_typeOtherPrimary, _typeSelfPrimary) + getVentaja(_typeOtherPrimary, _typeSelfSecondary),
+				getVentaja(_typeOtherSecondary, _typeSelfPrimary) + getVentaja(_typeOtherSecondary, _typeSelfSecondary)
+			);
+			if (_ventaja > 0) _dmg += 5;
 			_pv = String(Math.max(_pv-_dmg, 0));
 			$($($($(this).children()[_iSelf]).children()[1]).children()[3]).html(_pv);
 		});
+		
+		// Las comparaciones de tipos.
+		var _arrTypeNames = getArrayOfTypes(0);
+		var _arrTypeStyles = getArrayOfTypes(1);
+		
+		var _txtEffective = "";
+		for (var _i = 0; _i < _arrTypeNames.length; ++_i) {
+			if (getVentaja(_typeSelfPrimary, _arrTypeNames[_i]) > 0 || getVentaja(_typeSelfSecondary, _arrTypeNames[_i]) > 0)
+				_txtEffective += (_txtEffective != "" ? "," : "") + _arrTypeStyles[_i];
+		}
+		$("#dvEffective"+_sSelf).html("<div style='color:#00FF00;'>★</div> " + _txtEffective);
+		
+		var _txtWeak = "";
+		for (var _i = 0; _i < _arrTypeNames.length; ++_i)
+			if (getVentaja(_arrTypeNames[_i], _typeSelfPrimary) + getVentaja(_arrTypeNames[_i], _typeSelfSecondary) > 0)
+				_txtWeak += (_txtWeak != "" ? "," : "") + _arrTypeStyles[_i];
+		$("#dvWeak"+_sSelf).html("<div style='color:#FF0000;'>☓</div> " + _txtWeak);
+	}
+	
+	function getArrayOfTypes(_showStyles) {
+		var _preA = "<div class='typeText ";
+		var _preB = "'>";
+		var _suf = _showStyles ? "</div>" : "";
+		return [
+			(_showStyles ? (_preA + "Acero" + _preB) : "") + "Acero" + _suf,
+			(_showStyles ? (_preA + "Agua" + _preB) : "") + "Agua" + _suf,
+			(_showStyles ? (_preA + "Bicho" + _preB) : "") + "Bicho" + _suf,
+			(_showStyles ? (_preA + "Dragon" + _preB) : "") + "Dragon" + _suf,
+			(_showStyles ? (_preA + "Electrico" + _preB) : "") + "Electrico" + _suf,
+			(_showStyles ? (_preA + "Fantasma" + _preB) : "") + "Fantasma" + _suf,
+			(_showStyles ? (_preA + "Fuego" + _preB) : "") + "Fuego" + _suf,
+			(_showStyles ? (_preA + "Hada" + _preB) : "") + "Hada" + _suf,
+			(_showStyles ? (_preA + "Hielo" + _preB) : "") + "Hielo" + _suf,
+			(_showStyles ? (_preA + "Lucha" + _preB) : "") + "Lucha" + _suf,
+			(_showStyles ? (_preA + "Planta" + _preB) : "") + "Planta" + _suf,
+			(_showStyles ? (_preA + "Psiquico" + _preB) : "") + "Psiquico" + _suf,
+			(_showStyles ? (_preA + "Roca" + _preB) : "") + "Roca" + _suf,
+			(_showStyles ? (_preA + "Siniestro" + _preB) : "") + "Siniestro" + _suf,
+			(_showStyles ? (_preA + "Tierra" + _preB) : "") + "Tierra" + _suf,
+			(_showStyles ? (_preA + "Veneno" + _preB) : "") + "Veneno" + _suf,
+			(_showStyles ? (_preA + "Volador" + _preB) : "") + "Volador" + _suf
+		];
 	}
 	
 	// Añade una celda de un dado y sus botones a un turno.
 	function addTurnDiceCell(_div, _sufix, _strWho) {
 		_div.innerHTML += `
-			<div class="colorsYsiel" style="background-position: 0 138%; flex-basis: 24%; display: flex; flex-direction: column; background-image: url(https://i.servimg.com/u/f29/19/71/18/28/0010.jpg); background-size: 100%;">
-				<div id="imDamage`+_sufix+`" data-value="00" title="El dado de combate `+_strWho+`" style=" flex-basis: 100%; min-height: 25px;"></div>
+			<div class="colorsYsiel" style="background-position: 0 138%; flex-basis: 24%; display: flex; flex-direction: column; background-image: url(https://i.servimg.com/u/f29/19/71/18/28/1010.jpg); background-size: 100%;">
+				<div id="imDamage`+_sufix+`" data-value="10" title="El dado de combate `+_strWho+`" style=" flex-basis: 100%; min-height: 25px;"></div>
 				<div style="flex-basis: 100%; display: flex;">
 					<button class="colorsYsiel btModifyDamage" id="btSubDamage`+_sufix+`" title="Reduce el valor del dado de combate `+_strWho+`" style="flex-basis: 25%;">-</button>
 					<button class="colorsYsiel btModifyDamage" id="btAddDamage`+_sufix+`" title="Aumenta el valor del dado de combate `+_strWho+`" style="flex-basis: 25%;">+</button>
@@ -271,13 +337,18 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 			`<div style="flex-basis: 95%;"></div>`;
 		
 		// Devuelve el conjunto.
-		return
+		return [
 			`<div class="colorsYsiel" style="flex-basis: 48%; display: flex; flex-wrap: wrap; padding: 5px;">`+
 				_bar+
-				`<select name="ddType`+_idYours+`Primary" id="ddType`+_idYours+`Primary" class="dropdown Null" title="El primer tipo `+_strWho+`" style="flex-basis: 50%;">`+getDropdownTypes()+`</select>
-				<select name="ddType`+_idYours+`Secondary" id="ddType`+_idYours+`Secondary" class="dropdown Null" title="El segundo tipo `+_strWho+`" style="flex-basis: 50%;">`+getDropdownTypes()+`</select>`+
+				`<select name="ddType`+_idYours+`Primary" id="ddType`+_idYours+`Primary" class="dropdown Nulo" title="El primer tipo `+_strWho+`" style="flex-basis: 50%;">`+getDropdownTypes()+`</select>
+				<select name="ddType`+_idYours+`Secondary" id="ddType`+_idYours+`Secondary" class="dropdown Nulo" title="El segundo tipo `+_strWho+`" style="flex-basis: 50%;">`+getDropdownTypes()+`</select>`+
 				_buttons+
-			`</div>`;
+			`</div>`,
+			`<div class="colorsYsiel" style="flex-basis: 48%; display: flex; flex-wrap: wrap; padding: 5px;">
+				<div id="dvEffective`+_idYours+`" style="flex-basis: 100%; display: flex;" title="Estos son los tipos contra los cuales tienen ventaja ambos tipos `+_strWho+`"></div>
+				<div id="dvWeak`+_idYours+`" style="flex-basis: 100%; display: flex;" title="Estos son los tipos efectivos contra la combinación de tipos `+_strWho+`"></div>
+			</div>`
+		];
 	}
 	
 	// Calcula la ventaja.
