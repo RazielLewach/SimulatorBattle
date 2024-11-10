@@ -1,12 +1,13 @@
 if (document.getElementById("battleSimulatorPopup") == null) {
 	/*TODO
-		Botón ventaja de tipo actualmente no se tiene en cuenta, que se tenga y que este active el update al tocarlo.
+		
 	*/
 	// Todo el HTML y el CSS.
 	var tiposInterval = null;
 	document.getElementById("wrap").insertAdjacentHTML("afterend",`<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script><div id="battleSimulatorPopup" style="position:absolute; width:400px; font-weight:bold; font-size:12px; z-index: 999999; background-image:url('https://i.imgur.com/ph8xoAJ.png'); background-repeat: repeat;" class="colorsYsiel">
 		<div style="display: flex; justify-content: flex-end;"><button id="btClose" class="colorsYsiel">X</button></div>
 		<div style="display: flex; justify-content: center;"><div class="textShadow">Comparador de tipos y simulador de batallas.</div></div>
+		<div style="display: flex; justify-content: center;"><div class="textShadow"><div>Modo detallado</div></div> <input type="checkbox" id="chDetailed" name="nChDetailed" checked/></div>
 		
 		<div style="margin: 5px; display: flex; flex-wrap: wrap">
 			`+getPokemonLayout(true, false)[0]+`
@@ -121,6 +122,9 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	},10);
 	
 	// Listeners.
+	$("#chDetailed").change(function () {
+		updateAllInfo();
+	});
 	$(".dropdown").change(function() {
 		$(this).removeClass();
 		$(this).addClass("dropdown");
@@ -147,9 +151,9 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		var _div = document.createElement("div");
 		_div.style.cssText = "flex-basis: 100%; display: flex; margin-bottom: 8px;";
 		var _iRow = _table.childElementCount;
-		addTurnDiceCell(_div, String(_iRow)+"L", "de tu Poké");
+		addTurnDiceCell(_div, String(_iRow)+"L", true);
 		_div.innerHTML += `<div style="flex-basis: 4%; display: flex; flex-direction: column;"></div>`;
-		addTurnDiceCell(_div, String(_iRow)+"R", "del Poké rival");
+		addTurnDiceCell(_div, String(_iRow)+"R", false);
 		
 		// Añade la fila al DOM.
 		_table.appendChild(_div);
@@ -157,6 +161,8 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		// Añade los listeners.
 		addListenerDiceCell(String(_iRow)+"L");
 		addListenerDiceCell(String(_iRow)+"R");
+		addListenerTurnButtons(true);
+		addListenerTurnButtons(false);
 		
 		// Actualiza valores.
 		updateAllInfo();
@@ -199,6 +205,15 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	
 	// Actualiza los PV finales de un caso concreto.
 	function updateParticipant(_isYou) {
+		// Activa los botones adicionales en modo complejo.
+		if ($("#chDetailed").is(':checked')) {
+			$(".buttonOptional").show();
+		}
+		else {
+			$(".buttonOptional").removeClass("pressed");
+			$(".buttonOptional").hide();
+		}
+		
 		// Variables.
 		var _iSelf = _isYou ? 0 : 3;
 		var _iOther = _isYou ? 3 : 0;
@@ -213,11 +228,13 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		var _pv = parseInt($("#inPV"+_sSelf).val());
 		$("#tbDamages").children().each(function () { // Iteramos cada turno...
 			var _dmg = parseInt($($($(this).children()[_iOther]).children()[0])[0].dataset.value);
-			var _ventaja = Math.max(
-				getVentaja(_typeOtherPrimary, _typeSelfPrimary) + getVentaja(_typeOtherPrimary, _typeSelfSecondary),
-				getVentaja(_typeOtherSecondary, _typeSelfPrimary) + getVentaja(_typeOtherSecondary, _typeSelfSecondary)
-			);
-			if (_ventaja > 0) _dmg += 5;
+			if ($("#btAppliesType"+_sOther).hasClass("pressed")) {
+				var _ventaja = Math.max(
+					getVentaja(_typeOtherPrimary, _typeSelfPrimary) + getVentaja(_typeOtherPrimary, _typeSelfSecondary),
+					getVentaja(_typeOtherSecondary, _typeSelfPrimary) + getVentaja(_typeOtherSecondary, _typeSelfSecondary)
+				);
+				if (_ventaja > 0) _dmg += 5;
+			}
 			_pv = String(Math.max(_pv-_dmg, 0));
 			$($($($(this).children()[_iSelf]).children()[1]).children()[3]).html(_pv);
 		});
@@ -273,7 +290,9 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	}
 	
 	// Añade una celda de un dado y sus botones a un turno.
-	function addTurnDiceCell(_div, _sufix, _strWho) {
+	function addTurnDiceCell(_div, _sufix, _isYours) {
+		var _strWho = getWhoStrPoke(_isYours);
+		var _idYours = getWhoId(_isYours);
 		_div.innerHTML += `
 			<div class="colorsYsiel" style="background-position: 0 138%; flex-basis: 24%; display: flex; flex-direction: column; background-image: url(https://i.servimg.com/u/f29/19/71/18/28/1010.jpg); background-size: 100%;">
 				<div id="imDamage`+_sufix+`" data-value="10" title="El dado de combate `+_strWho+`" style=" flex-basis: 100%; min-height: 25px;"></div>
@@ -284,8 +303,12 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 					<div class="colorsYsielNoBorder" id="dvPVNext`+_sufix+`" title="Tras este turno, los PV `+_strWho+`" style="flex-basis: 25%;"></div>
 				</div>
 			</div>
-			<div class="colorsYsiel" style="flex-basis: 24%; display: flex; flex-direction: column;">
-				AAA
+			<div class="colorsYsiel" style="flex-basis: 24%; display: flex; flex-wrap: wrap; padding: 5px;">
+				<input class="buttonBonus buttonOptional" id="btAppliesAttackX`+_idYours+`" type="image" src="https://i.imgur.com/OtUN5bg.png" title="Indicador de aplicar Ataque X al atacar `+_strWho+`" style="flex-basis: 5%;"/>
+				<input class="buttonBonus buttonOptional" id="btAppliesDefenseX`+_idYours+`" type="image" src="https://i.imgur.com/7EbC1Oh.png" title="Indicador de aplicar Defensa X al ser atacado `+_strWho+`" style="flex-basis: 5%;"/>
+				<input class="buttonBonus buttonOptional" id="btAppliesBerryOff`+_idYours+`" type="image" src="https://i.imgur.com/JlvDeOe.png" title="Indicador de aplicar baya para causar más daño atacar `+_strWho+`" style="flex-basis: 5%;"/>
+				<input class="buttonBonus buttonOptional" id="btAppliesBerryDef`+_idYours+`" type="image" src="https://i.imgur.com/FFO0E3d.png" title="Indicador de aplicar baya para reducir daño al ser atacado `+_strWho+`" style="flex-basis: 5%;"/>
+				<div style="flex-basis: 80%;"></div>
 			</div>
 		`;
 	}
@@ -318,6 +341,23 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		});
 	}
 	
+	// Añade los listeners de los botones de bonos.
+	function addListenerTurnButtons(_isYours) {
+		var _idYours = getWhoId(_isYours);
+		
+		$("#btAppliesAttackX"+_idYours).click(function() {
+			
+		}
+		$("#btAppliesDefenseX"+_idYours).click(function() {
+			
+		}
+		$("#btAppliesBerryOff"+_idYours).click(function() {
+			
+		}
+		$("#btAppliesBerryDef"+_idYours).click(function() {
+			
+		}
+	
 	// Modifica el sprite de un dado según su valor.
 	function setDamageDiceSrc(_idParent, _val) {
 		if (_val == "00") _idParent.style.backgroundImage = "url('https://i.servimg.com/u/f29/19/71/18/28/0010.jpg')";
@@ -331,15 +371,15 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	
 	// Añade una casilla de Pokémon.
 	function getPokemonLayout(_isYours, _isNumberLeft) {
-		var _strWho = _isYours ? "de tu Poké" : "del Poké rival";
-		var _idYours = _isYours ? "You" : "Rival";
+		var _strWho = getWhoStrPoke(_isYours);
+		var _idYours = getWhoId(_isYours);
 		
 		// Construye la barra de vida y el número. Indica si hay ventaja de tipo.
 		var _space = `<div style="flex-basis: 70%;" id="txtTypeBonus`+_idYours+`"></div>`;
 		var _drops = `<div style="flex-basis: 30%;">PV: <input class="inPV" id="inPV`+_idYours+`" title="Los puntos de vida `+_strWho+`" value="40" style="margin-left: 3px; margin-right: 3px; width: 26px;"/></div>`;
 		var _bar = String(_isNumberLeft ? _space+_drops : _drops+_space);
 		var _buttons =
-			`<input class="buttonBonus pressed" type="image" src="https://i.imgur.com/wbnNZSi.png" title="Indicador de aplicar ventaja de tipo al atacar `+_strWho+`" style="flex-basis: 5%;"/>`+
+			`<input class="buttonBonus pressed" id="btAppliesType`+_idYours+`" type="image" src="https://i.imgur.com/wbnNZSi.png" title="Indicador de aplicar ventaja de tipo al atacar `+_strWho+`" style="flex-basis: 5%;"/>`+
 			`<div style="flex-basis: 95%;"></div>`;
 		
 		// Devuelve el conjunto.
@@ -401,6 +441,14 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		)
 			return -5;
 		return 0;
+	}
+	
+	// Obtén strings para referencias.
+	function getWhoStrPoke(_isYours) {
+		return _isYours ? "de tu Poké" : "del Poké rival";
+	}
+	function getWhoId(_isYours) {
+		return _isYours ? "You" : "Rival";
 	}
 }
 
