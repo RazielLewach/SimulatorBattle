@@ -6,8 +6,7 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	var tiposInterval = null;
 	document.getElementById("wrap").insertAdjacentHTML("afterend",`<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script><div id="battleSimulatorPopup" style="position:absolute; width:400px; font-weight:bold; font-size:12px; z-index: 999999; background-image:url('https://i.imgur.com/ph8xoAJ.png'); background-repeat: repeat;" class="colorsYsiel">
 		<div style="display: flex; justify-content: flex-end;"><button id="btClose" class="colorsYsiel">X</button></div>
-		<div style="display: flex; justify-content: center;"><div class="textShadow">Comparador de tipos y simulador de batallas.</div></div>
-		<div style="display: flex; justify-content: center;"><div class="textShadow"><div>Modo detallado</div></div> <input type="checkbox" id="chDetailed" name="nChDetailed" checked/></div>
+		<div style="display: flex; justify-content: center;"><div class="textShadow">Comparador de tipos</div></div>
 		
 		<div style="margin: 5px; display: flex; flex-wrap: wrap">
 			`+getPokemonLayout(true, false)[0]+`
@@ -21,7 +20,7 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 			`+getPokemonLayout(false, true)[1]+`
 		</div>
 		
-		<div class="divBattleTitle"><div class="textShadow">Dados de combate</div></div>
+		<div class="divBattleTitle"><div class="textShadow">Simulador de batallas</div></div>
 		<div style="margin: 5px;" id="tbDamages" style="display: flex;"></div>
 		
 		<div style="display: flex; justify-content: center;">
@@ -113,6 +112,7 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		.typeText {padding: 0 2px 0 2px; margin: 1px 2px 1px 2px; text-align: center;}
 	</style>
 	`);
+	updateAllInfo();
 
 	// El bucle principal.
 	tiposInterval = setInterval(() => {
@@ -122,16 +122,13 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	},10);
 	
 	// Listeners.
-	$("#chDetailed").change(function () {
-		updateAllInfo();
-	});
 	$(".dropdown").change(function() {
 		$(this).removeClass();
 		$(this).addClass("dropdown");
 		$(this).addClass($(this).val());
 		updateAllInfo();
 	});
-	$(".inPV").change(function() {
+	$(".inUpdate").change(function() {
 		updateAllInfo();
 	});
 	$(".buttonBonus").click(function() {
@@ -161,8 +158,6 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		// Añade los listeners.
 		addListenerDiceCell(String(_iRow)+"L");
 		addListenerDiceCell(String(_iRow)+"R");
-		addListenerTurnButtons(true);
-		addListenerTurnButtons(false);
 		
 		// Actualiza valores.
 		updateAllInfo();
@@ -171,7 +166,7 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		$("#tbDamages").children().last().remove();
 		updateAllInfo();
 	});
-		
+	
 	// Añade un dropdown de tipos.
 	function getDropdownTypes() {
 		return `
@@ -205,18 +200,10 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	
 	// Actualiza los PV finales de un caso concreto.
 	function updateParticipant(_isYou) {
-		// Activa los botones adicionales en modo complejo.
-		if ($("#chDetailed").is(':checked')) {
-			$(".buttonOptional").show();
-		}
-		else {
-			$(".buttonOptional").removeClass("pressed");
-			$(".buttonOptional").hide();
-		}
-		
 		// Variables.
-		var _iSelf = _isYou ? 0 : 3;
-		var _iOther = _isYou ? 3 : 0;
+		var _iOtherDamage = _isYou ? 4 : 0;
+		var _iSelfPV = _isYou ? 1 : 3;
+		var _iOtherModif = _isYou ? 1 : 0;
 		var _sSelf = _isYou ? "You" : "Rival";
 		var _sOther = _isYou ? "Rival" : "You";
 		var _typeSelfPrimary = $('#ddType'+_sSelf+'Primary').val();
@@ -226,17 +213,22 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		
 		// La vida.
 		var _pv = parseInt($("#inPV"+_sSelf).val());
-		$("#tbDamages").children().each(function () { // Iteramos cada turno...
-			var _dmg = parseInt($($($(this).children()[_iOther]).children()[0])[0].dataset.value);
-			if ($("#btAppliesType"+_sOther).hasClass("pressed")) {
+		$("#tbDamages").children().each(function () { // Iteramos cada turno...		
+			// Obtén el daño del rival.
+			var _dmg = parseInt($(this).find(".dvTurnDamages"+_sOther).find(".dvDiceValue")[0].dataset.value);
+			if (_dmg > 0 && $("#btAppliesType"+_sOther).hasClass("pressed")) {
 				var _ventaja = Math.max(
 					getVentaja(_typeOtherPrimary, _typeSelfPrimary) + getVentaja(_typeOtherPrimary, _typeSelfSecondary),
 					getVentaja(_typeOtherSecondary, _typeSelfPrimary) + getVentaja(_typeOtherSecondary, _typeSelfSecondary)
 				);
 				if (_ventaja > 0) _dmg += 5;
+				_dmg += parseInt($("#inDamageModif"+_sOther).val());
 			}
+			_dmg += parseInt($(this).find(".dvTurnDamages"+_sOther).find(".inDamageModif").val());
+			
+			// Resta los PV y aplícalos.
 			_pv = String(Math.max(_pv-_dmg, 0));
-			$($($($(this).children()[_iSelf]).children()[1]).children()[3]).html(_pv);
+			$(this).find(".dvTurnPV"+_sSelf).find(".inTurnPV").html(_pv);
 		});
 		
 		// Las comparaciones de tipos.
@@ -293,24 +285,32 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 	function addTurnDiceCell(_div, _sufix, _isYours) {
 		var _strWho = getWhoStrPoke(_isYours);
 		var _idYours = getWhoId(_isYours);
-		_div.innerHTML += `
-			<div class="colorsYsiel" style="background-position: 0 138%; flex-basis: 24%; display: flex; flex-direction: column; background-image: url(https://i.servimg.com/u/f29/19/71/18/28/1010.jpg); background-size: 100%;">
-				<div id="imDamage`+_sufix+`" data-value="10" title="El dado de combate `+_strWho+`" style=" flex-basis: 100%; min-height: 25px;"></div>
-				<div style="flex-basis: 100%; display: flex;">
-					<button class="colorsYsiel btModifyDamage" id="btSubDamage`+_sufix+`" title="Reduce el valor del dado de combate `+_strWho+`" style="flex-basis: 25%;">-</button>
-					<button class="colorsYsiel btModifyDamage" id="btAddDamage`+_sufix+`" title="Aumenta el valor del dado de combate `+_strWho+`" style="flex-basis: 25%;">+</button>
-					<div class="colorsYsielNoBorder" title="Tras este turno, los PV `+_strWho+`" style="flex-basis: 25%; padding-left: 2px;">PV = </div>
-					<div class="colorsYsielNoBorder" id="dvPVNext`+_sufix+`" title="Tras este turno, los PV `+_strWho+`" style="flex-basis: 25%;"></div>
+		var _title = `"La suma total de modificadores de daño para este turno `+_strWho+`. Aumentos de daño suman, mientras que reducciones de daño restan. El uso de ítems curativos por el otro bando contaría como una resta. Este valor siempre aplica aún si el dado de combate falla."`;
+		var _modifText = `<div style="flex-basis: 55%;" title=`+_title+`>Modificadores</div>`;
+		var _modifIn = `
+			<div style="flex-basis: 20%;"><input class="inDamageModif" id="inDamageModif`+_sufix+`" title=`+_title+` value="0" style="margin-left: 3px; margin-right: 3px; width: 26px;"/></div>
+		`;
+		var _dice = `
+			<div class="colorsYsiel dvTurnDamages`+_idYours+`" style="flex-basis: 40%; display: flex; flex-direction: column;">
+				<div style="flex-basis: 100%; display: flex; flex-direction: row; background-position: 0 91%; background-image: url(https://i.servimg.com/u/f29/19/71/18/28/1010.jpg); background-size: 100%;">
+					<button class="colorsYsiel btModifyDamage btSubDamage" id="btSubDamage`+_sufix+`" title="Reduce el valor del dado de combate `+_strWho+`" style="flex-basis: 15%;">-</button>
+					<div class="dvDiceValue" id="imDamage`+_sufix+`" data-value="10" title="El dado de combate `+_strWho+`" style="flex-basis: 70%; min-height: 25px;"></div>
+					<button class="colorsYsiel btModifyDamage btAddDamage" id="btAddDamage`+_sufix+`" title="Aumenta el valor del dado de combate `+_strWho+`" style="flex-basis: 15%;">+</button>
+				</div>
+				<div style="flex-basis: 100%; display: flex; justify-content: center; margin-top: 3px;">
+		`
+		+ (_isYours ? _modifIn+_modifText : _modifText+_modifIn) +
+		`
 				</div>
 			</div>
-			<div class="colorsYsiel" style="flex-basis: 24%; display: flex; flex-wrap: wrap; padding: 5px;">
-				<input class="buttonBonus buttonOptional" id="btAppliesAttackX`+_idYours+`" type="image" src="https://i.imgur.com/OtUN5bg.png" title="Indicador de aplicar Ataque X al atacar `+_strWho+`" style="flex-basis: 5%;"/>
-				<input class="buttonBonus buttonOptional" id="btAppliesDefenseX`+_idYours+`" type="image" src="https://i.imgur.com/7EbC1Oh.png" title="Indicador de aplicar Defensa X al ser atacado `+_strWho+`" style="flex-basis: 5%;"/>
-				<input class="buttonBonus buttonOptional" id="btAppliesBerryOff`+_idYours+`" type="image" src="https://i.imgur.com/JlvDeOe.png" title="Indicador de aplicar baya para causar más daño atacar `+_strWho+`" style="flex-basis: 5%;"/>
-				<input class="buttonBonus buttonOptional" id="btAppliesBerryDef`+_idYours+`" type="image" src="https://i.imgur.com/FFO0E3d.png" title="Indicador de aplicar baya para reducir daño al ser atacado `+_strWho+`" style="flex-basis: 5%;"/>
-				<div style="flex-basis: 80%;"></div>
+		`;
+		var _pv = `
+			<div class="colorsYsiel dvTurnPV`+_idYours+`" style="flex-basis: 8%; display: flex; flex-direction: column; align-items: center;">
+				<div class="colorsYsielNoBorder" title="Tras este turno, los PV `+_strWho+`" style="flex-basis: 25%; padding-left: 2px;">PV</div>
+				<div class="colorsYsielNoBorder inTurnPV" id="dvPVNext`+_sufix+`" title="Tras este turno, los PV `+_strWho+`" style="flex-basis: 25%;"></div>
 			</div>
 		`;
+		_div.innerHTML += _isYours ? _dice+_pv : _pv+_dice;
 	}
 	
 	// Añade los listeners a los botones del dado de daño.
@@ -339,24 +339,10 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 			setDamageDiceSrc($(_idImg)[0].parentElement, $(_idImg)[0].dataset.value);
 			updateAllInfo();
 		});
+		$("#inDamageModif"+_sufix).change(function() {
+			updateAllInfo();
+		});
 	}
-	
-	// Añade los listeners de los botones de bonos.
-	function addListenerTurnButtons(_isYours) {
-		var _idYours = getWhoId(_isYours);
-		
-		$("#btAppliesAttackX"+_idYours).click(function() {
-			
-		}
-		$("#btAppliesDefenseX"+_idYours).click(function() {
-			
-		}
-		$("#btAppliesBerryOff"+_idYours).click(function() {
-			
-		}
-		$("#btAppliesBerryDef"+_idYours).click(function() {
-			
-		}
 	
 	// Modifica el sprite de un dado según su valor.
 	function setDamageDiceSrc(_idParent, _val) {
@@ -376,11 +362,16 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		
 		// Construye la barra de vida y el número. Indica si hay ventaja de tipo.
 		var _space = `<div style="flex-basis: 70%;" id="txtTypeBonus`+_idYours+`"></div>`;
-		var _drops = `<div style="flex-basis: 30%;">PV: <input class="inPV" id="inPV`+_idYours+`" title="Los puntos de vida `+_strWho+`" value="40" style="margin-left: 3px; margin-right: 3px; width: 26px;"/></div>`;
+		var _drops = `<div style="flex-basis: 30%;">PV: <input class="inUpdate" id="inPV`+_idYours+`" title="Los puntos de vida `+_strWho+`" value="40" style="margin-left: 3px; margin-right: 3px; width: 26px;"/></div>`;
 		var _bar = String(_isNumberLeft ? _space+_drops : _drops+_space);
-		var _buttons =
-			`<input class="buttonBonus pressed" id="btAppliesType`+_idYours+`" type="image" src="https://i.imgur.com/wbnNZSi.png" title="Indicador de aplicar ventaja de tipo al atacar `+_strWho+`" style="flex-basis: 5%;"/>`+
-			`<div style="flex-basis: 95%;"></div>`;
+		var _title = `"La suma total de modificadores de daño `+_strWho+` (potenciadores, bonos legendarios, mecánicas...). Aplica de base a todos los turnos. Aumentos de daño suman, mientras que reducciones de daño restan. Este valor solo aplica si el dado de combate acierta."`;
+		var _modifText = `<div style="flex-basis: 50%; margin-top: 3px;" title=`+_title+`>Modificadores</div>`;
+		var _modifIn = `
+			<div style="flex-basis: 20%;"><input class="inUpdate inDamageModif" id="inDamageModif`+_idYours+`" title=`+_title+` value="0" style="margin-left: 3px; margin-right: 3px; margin-top: 3px; width: 26px;"/></div>
+		`;
+		var _btType = `<input class="buttonBonus pressed" id="btAppliesType`+_idYours+`" type="image" src="https://i.imgur.com/wbnNZSi.png" title="Indicador de aplicar ventaja de tipo al atacar `+_strWho+`. Solo aplica si el dado de combate acierta." style="flex-basis: 5%;"/>`;
+		var _sep = `<div style="flex-basis: 15%;"></div>`;
+		var _buttons = _isYours ? (_btType + _sep + _modifText + _modifIn) : (_modifIn + _modifText + _sep + _btType);
 		
 		// Devuelve el conjunto.
 		return [
