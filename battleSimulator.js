@@ -216,12 +216,14 @@ if (document.getElementById("battleSimulatorPopup") == null) {
 		$("#tbDamages").children().each(function () { // Iteramos cada turno...		
 			// Obtén el daño del rival.
 			var _dmg = parseInt($(this).find(".dvTurnDamages"+_sOther).find(".dvDiceValue")[0].dataset.value);
-			if (_dmg > 0 && $("#btAppliesType"+_sOther).hasClass("pressed")) {
-				var _ventaja = Math.max(
-					getVentaja(_typeOtherPrimary, _typeSelfPrimary) + getVentaja(_typeOtherPrimary, _typeSelfSecondary),
-					getVentaja(_typeOtherSecondary, _typeSelfPrimary) + getVentaja(_typeOtherSecondary, _typeSelfSecondary)
-				);
-				if (_ventaja > 0) _dmg += 5;
+			if (_dmg > 0) {
+				if ($("#btAppliesType"+_sOther).hasClass("pressed")) {
+					var _ventaja = Math.max(
+						getVentaja(_typeOtherPrimary, _typeSelfPrimary) + getVentaja(_typeOtherPrimary, _typeSelfSecondary),
+						getVentaja(_typeOtherSecondary, _typeSelfPrimary) + getVentaja(_typeOtherSecondary, _typeSelfSecondary)
+					);
+					if (_ventaja > 0) _dmg += 5;
+				}
 				_dmg += parseInt($("#inDamageModif"+_sOther).val());
 			}
 			_dmg += parseInt($(this).find(".dvTurnDamages"+_sOther).find(".inDamageModif").val());
